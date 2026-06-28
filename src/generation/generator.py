@@ -1,7 +1,7 @@
 #Adding generator part to generate the output of the RAG
 from langchain_openai import ChatOpenAI
 from src.config import LLM_MODEL,OPENAI_API_KEY,MAX_TOKENS,LLM_TEMPERATURE
-from src.generation.prompt_templates import SYSTEM_PROMPT,formatting_retrieval,get_user_content
+from src.generation.prompt_template import SYSTEM_PROMPT,formatting_retrieval,get_user_content
 
 
 #Function to generate the output response from the LLM

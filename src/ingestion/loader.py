@@ -6,6 +6,55 @@ import pdfplumber
 import pandas as pd
 from langchain_core.documents import Document
 
+try:
+    import fitz  # PyMuPDF
+except ImportError:
+    fitz = None
+
+
+def load_pdf_with_pdfplumber(file_path: str, base_meta: dict) -> list[Document]:
+    documents = []
+
+    with pdfplumber.open(file_path) as pdf:
+        total_pages = len(pdf.pages)
+        for i, page in enumerate(pdf.pages):
+            text = page.extract_text() or ""
+
+            if not text.strip():
+                continue
+
+            text = re.sub(r"\d{2}/\d{2}/\d{4},\s*\d{2}:\d{2}\s*\S+", "", text).strip()
+            page_meta = dict(base_meta)
+            page_meta.update({"page": i, "total_pages": total_pages, "parser": "pdfplumber"})
+            documents.append(Document(page_content=text, metadata=page_meta))
+
+    return documents
+
+
+def load_pdf_with_pymupdf(file_path: str, base_meta: dict) -> list[Document]:
+    if fitz is None:
+        raise ImportError("PyMuPDF is not installed")
+
+    documents = []
+    doc = fitz.open(file_path)
+    try:
+        total_pages = len(doc)
+
+        for i in range(total_pages):
+            page = doc.load_page(i)
+            text = page.get_text("text") or ""
+
+            if not text.strip():
+                continue
+
+            text = re.sub(r"\d{2}/\d{2}/\d{4},\s*\d{2}:\d{2}\s*\S+", "", text).strip()
+            page_meta = dict(base_meta)
+            page_meta.update({"page": i, "total_pages": total_pages, "parser": "pymupdf"})
+            documents.append(Document(page_content=text, metadata=page_meta))
+    finally:
+        doc.close()
+
+    return documents
 
 
 def load_file(file_path: str, metadata: dict = None) -> list[Document]:
@@ -25,22 +74,16 @@ def load_file(file_path: str, metadata: dict = None) -> list[Document]:
         base_meta.update(metadata)
 
     #Handling the .pdf files
-    if ext==".pdf":
+    if ext == ".pdf":
         try:
-            with pdfplumber.open(file_path)as pdf:
-                total_pages=len(pdf.pages)
-                for i,page in enumerate(pdf.pages):
-                    text=page.extract_text() or ""
-                    if not text:
-                        continue
-                    #Remove common browser PDF Header(date/time +filename)
-                    text = re.sub(r'\d{2}/\d{2}/\d{4},\s*\d{2}:\d{2}\s*\S+', '', text).strip()
-                    page_meta = dict(base_meta)
-                    page_meta.update({"page": i, "total_pages": total_pages})
-                    documents.append(Document(page_content=text, metadata=page_meta))
+            documents = load_pdf_with_pdfplumber(file_path, base_meta)
         except Exception as e:
-            print(f"Failed to read PDF{file_path}:{e}")
-            return[]
+            print(f"pdfplumber failed for {file_path}: {e}")
+            try:
+                documents = load_pdf_with_pymupdf(file_path, base_meta)
+            except Exception as fallback_error:
+                print(f"PyMuPDF also failed for {file_path}: {fallback_error}")
+                return []
         
     #Handling the .txt, .md and .text format files
     elif ext in (".txt", ".md", ".text"):
@@ -121,9 +164,8 @@ if __name__=="__main__":
     docs = load_all_documents()
      # Print first page as a test
     if docs:
-        print(f"\npage 10 preview:")
+        print(f"\npage preview:")
         print(f"Metadata: {docs[0].metadata}")
-        print(f"Content: {docs[1].page_content[:500]}...")
-
+        print(f"Content: {docs[0].page_content[:500]}...")
 
 

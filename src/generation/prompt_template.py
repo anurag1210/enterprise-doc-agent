@@ -1,4 +1,4 @@
-from src.retrieval.retriever import retrieve_vectordb
+from src.retrieval.search import retrieve_vectordb
 
 
 # System prompt with your specific constraints
