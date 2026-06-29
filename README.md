@@ -243,6 +243,41 @@ Grading and validation require deterministic, typed responses (a float score, a 
 
 ---
 
+
+---
+
+## Production Considerations
+
+This capstone is designed for local/Docker deployment. In a production environment, several architectural changes would be necessary:
+
+### Document Management
+
+Currently, the vector store is a local ChromaDB instance with no document-level CRUD operations. In production:
+
+- A **document store** (MongoDB or PostgreSQL) would sit alongside the vector store, tracking each document's ingestion status, version history, upload timestamp, and owner.
+- When a document is re-uploaded, the system would query the document store to determine whether it already exists, delete only its chunks from the vector store using metadata filtering (`vector_store.delete(where={"source_file": "report.pdf"})`), then re-chunk and re-embed the new version — rather than clearing the entire knowledge base.
+- The document store also enables an audit trail: who uploaded what, when, and which version is currently active.
+
+### Vector Store Scaling
+
+ChromaDB works well for local development but has limitations at scale. Production alternatives include Pinecone (managed, serverless), Weaviate (self-hosted or cloud), or Qdrant — chosen based on throughput, latency, and filtering requirements.
+
+### Guardrails Layering
+
+The current system uses rule-based input validation and LLM-based output validation. A production stack would typically layer three levels: (1) rule-based checks (current implementation — fast, zero cost), (2) dedicated classifier models for toxicity, PII, and prompt injection detection (e.g. Microsoft Presidio, OpenAI moderation endpoint), and (3) LLM-as-judge for nuanced grounding and compliance checks (current `validate_node`).
+
+### Multi-Tenancy and Access Control
+
+The current system has no user authentication or data isolation. Production deployment would require per-tenant document collections, role-based access control, and API key management — ensuring one team's documents are not searchable by another.
+
+### Observability
+
+LangSmith tracing is included as optional. In production, this would be supplemented with OpenTelemetry instrumentation, Prometheus metrics (latency, token cost, error rate per query), and Grafana dashboards for real-time monitoring and alerting.
+
+
+
+
+
 ## Licence
 
 MIT
