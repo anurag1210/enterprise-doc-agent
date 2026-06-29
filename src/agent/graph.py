@@ -8,6 +8,9 @@ from src.agent.nodes import (
     validate_node
 )
 
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
+
 # Conditional routing logic
 def route_after_grading(state: AgentState) -> str:
     if state["needs_retry"]:

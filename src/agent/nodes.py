@@ -5,7 +5,7 @@ from typing import Dict, Any
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import HumanMessage,SystemMessage
 from src.retrieval.search import retrieve_vectordb
-from src.generation.prompt_templates import format_context
+from src.generation.prompt_template import format_context
 from pydantic import BaseModel,Field
 from src.config import LLM_MODEL, OPENAI_API_KEY
 from src.generation.prompt_template import SYSTEM_PROMPT
