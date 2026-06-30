@@ -275,7 +275,7 @@ The current system has no user authentication or data isolation. Production depl
 LangSmith tracing is included as optional. In production, this would be supplemented with OpenTelemetry instrumentation, Prometheus metrics (latency, token cost, error rate per query), and Grafana dashboards for real-time monitoring and alerting.
 
 
-
+- **Scoped retrieval per document** — currently all documents share a single vector store collection, so queries retrieve chunks across all ingested files. A production improvement would filter retrieval by the active document using metadata filtering (`source_file`), or maintain separate collections per document, so queries are scoped to the relevant file.
 
 
 ## Licence

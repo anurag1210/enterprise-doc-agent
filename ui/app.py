@@ -102,6 +102,9 @@ def format_citations(retrieved_docs: list) -> list[dict]:
     return citations
 
 
+
+
+
 def render_citations(citations: list[dict]) -> None:
     """Render a small citation list under the answer."""
     if not citations:
@@ -123,7 +126,7 @@ def render_citations(citations: list[dict]) -> None:
             st.caption(citation["snippet"])
 
 
-def answer_query(query: str) -> tuple[str, list[dict]]:
+def answer_query(query: str) -> tuple[str, list[dict], dict]:
     """Run the agent graph and return the answer plus retrieval citations."""
     result = agent_app.invoke(
         {
@@ -135,7 +138,7 @@ def answer_query(query: str) -> tuple[str, list[dict]]:
 
     answer = result.get("final_answer") or result.get("answer") or ""
     citations = format_citations(result.get("retrieved_docs", []))
-    return answer, citations
+    return answer, citations, result
 
 
 # -----------------------------
@@ -210,10 +213,11 @@ if query:
         st.markdown(query)
 
     # Call the agent graph, which handles retrieval and answer generation.
+# Call the agent graph
     with st.spinner("Generating answer..."):
-        answer, citations = answer_query(query)
+        answer, citations, result = answer_query(query)
 
-    # Output guardrail: block unsafe answers before showing them.
+    # Output guardrail
     ok, message = check_output(answer)
     if not ok:
         st.error(message)
@@ -226,11 +230,17 @@ if query:
         )
         st.stop()
 
-    # Show the final answer and its sources.
+    # Show the final answer, citations, and agent trace
     with st.chat_message("assistant"):
         st.markdown(answer)
         with st.expander("Citations", expanded=False):
             render_citations(citations)
+        with st.expander("Agent Trace", expanded=False):
+            st.write(f"Retrieval score: {result.get('retrieval_score')}")
+            st.write(f"Grounded: {result.get('is_grounded')}")
+            st.write(f"Retries: {result.get('retry_count')}")
+            if result.get("reformulated_query"):
+                st.write(f"Reformulated query: {result['reformulated_query']}")
 
     st.session_state.messages.append(
         {
