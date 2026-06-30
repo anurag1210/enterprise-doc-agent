@@ -278,6 +278,10 @@ LangSmith tracing is included as optional. In production, this would be suppleme
 - **Scoped retrieval per document** — currently all documents share a single vector store collection, so queries retrieve chunks across all ingested files. A production improvement would filter retrieval by the active document using metadata filtering (`source_file`), or maintain separate collections per document, so queries are scoped to the relevant file.
 
 
+## Architecture
+
+![Architecture Diagram](docs/architecture_diagram.svg)
+
 ## Licence
 
 MIT
